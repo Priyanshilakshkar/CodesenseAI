@@ -1,0 +1,84 @@
+# .codesense.yml
+# Place this file in the root of your repository.
+# CodeSense AI reads it on every PR review.
+# All fields are optional — unset fields use system defaults.
+
+review:
+
+  # ── Review limits ──────────────────────────────────────────────
+  # Maximum inline comments to post per PR.
+  # When more issues are found, highest-severity ones are kept.
+  # Default: 80
+  maxComments: 50
+
+  # AI model to use for this repository.
+  # "gpt-4o"       → best quality, higher cost
+  # "gpt-4o-mini"  → faster, cheaper, slightly lower quality
+  # Default: gpt-4o
+  model: gpt-4o
+
+  # Minimum AI confidence (0-100) to include a finding.
+  # Higher = fewer but more accurate comments.
+  # Default: 70
+  confidenceThreshold: 80
+
+  # Minimum severity (0-100) to include a finding.
+  # Set to 50 to skip style/info findings entirely.
+  # Default: 0 (include everything above confidence threshold)
+  minimumSeverity: 40
+
+  # ── File filtering ──────────────────────────────────────────────
+  # Files matching these glob patterns are skipped entirely.
+  # Standard glob syntax: * = any chars except /, ** = any chars
+  ignoreFiles:
+    - "**/*.generated.java"
+    - "src/test/**"
+    - "*.md"
+    - "**/*.lock"
+    - "docs/**"
+
+  # Only review files matching these patterns.
+  # If empty, all files are reviewed (minus ignoreFiles).
+  onlyFiles:
+    - "src/main/**"
+
+  # ── Custom rules ────────────────────────────────────────────────
+  # Patterns that are ALWAYS flagged, regardless of AI confidence.
+  # Supports plain strings and regex patterns.
+  alwaysFlag:
+    - pattern: "System.out.println"
+      severity: WARNING
+      message: "Use a logger instead of System.out.println"
+    - pattern: "TODO|FIXME|HACK"
+      severity: INFO
+      message: "Unfinished work detected"
+    - pattern: "Thread.sleep"
+      severity: WARNING
+      message: "Blocking sleep in production code"
+    - pattern: "password\\s*=\\s*[\"'][^\"']+[\"']"
+      severity: CRITICAL
+      message: "Hardcoded password detected"
+
+  # Instructions added to the AI prompt for this repo.
+  # Use these to encode your team's specific conventions.
+  requirePatterns:
+    - "All database queries must use parameterized statements"
+    - "All public methods must handle null inputs"
+    - "Use Optional instead of returning null"
+
+  # Issue categories to suppress entirely.
+  # Valid values: SECURITY, PERFORMANCE, BUG, STYLE, MAINTAINABILITY
+  ignoreCategories:
+    - STYLE
+
+  # ── Per-language overrides ──────────────────────────────────────
+  # Override any top-level setting for specific file types.
+  languageOverrides:
+    java:
+      confidenceThreshold: 85    # stricter for Java
+      model: gpt-4o              # always use best model for Java
+    sh:
+      confidenceThreshold: 60    # looser for shell scripts
+      model: gpt-4o-mini         # cheaper for scripts
+    sql:
+      minimumSeverity: 60        # only flag significant SQL issues

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeSense AI — Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: #F8F9FA; color: #1A1A2E; }
+
+    /* ── Layout ── */
+    .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px;
+               background: #1A1A2E; padding: 24px 0; }
+    .sidebar-logo { padding: 0 20px 24px; font-size: 18px; font-weight: 600;
+                    color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo span { color: #7C71E8; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 20px;
+                color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px;
+                transition: all .15s; }
+    .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.08);
+                                        color: #fff; }
+    .nav-item.active { border-left: 3px solid #7C71E8; }
+    .main { margin-left: 220px; padding: 32px; }
+
+    /* ── Header ── */
+    .page-header { display: flex; justify-content: space-between;
+                   align-items: center; margin-bottom: 28px; }
+    .page-title { font-size: 24px; font-weight: 600; }
+    .period-selector { display: flex; gap: 6px; }
+    .period-btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #DEE2E6;
+                  background: #fff; cursor: pointer; font-size: 13px;
+                  text-decoration: none; color: #495057; }
+    .period-btn.active { background: #534AB7; color: #fff; border-color: #534AB7; }
+
+    /* ── Stat cards ── */
+    .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr);
+                  gap: 16px; margin-bottom: 24px; }
+    .card { background: #fff; border-radius: 12px; padding: 20px;
+            border: 1px solid #EAECEF; }
+    .card-label { font-size: 12px; color: #6C757D; text-transform: uppercase;
+                  letter-spacing: .06em; margin-bottom: 8px; }
+    .card-value { font-size: 28px; font-weight: 600; margin-bottom: 4px; }
+    .card-sub { font-size: 12px; color: #6C757D; }
+    .card.security { border-top: 3px solid #EF4444; }
+    .card.cost      { border-top: 3px solid #10B981; }
+    .card.reviews   { border-top: 3px solid #534AB7; }
+    .card.cache     { border-top: 3px solid #0EA5E9; }
+
+    /* ── Charts ── */
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr;
+                   gap: 16px; margin-bottom: 24px; }
+    .chart-card { background: #fff; border-radius: 12px; padding: 20px;
+                  border: 1px solid #EAECEF; }
+    .chart-title { font-size: 14px; font-weight: 500; margin-bottom: 16px;
+                   color: #1A1A2E; }
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr;
+                 gap: 16px; margin-bottom: 24px; }
+
+    /* ── Tables ── */
+    .table-card { background: #fff; border-radius: 12px; padding: 20px;
+                  border: 1px solid #EAECEF; margin-bottom: 24px; }
+    .table-header { display: flex; justify-content: space-between;
+                    align-items: center; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 12px; font-weight: 500; color: #6C757D;
+         text-transform: uppercase; letter-spacing: .05em;
+         padding: 0 12px 10px; border-bottom: 1px solid #EAECEF; }
+    td { padding: 12px; font-size: 14px; border-bottom: 1px solid #F8F9FA; }
+    tr:hover td { background: #F8F9FA; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 100px;
+             font-size: 11px; font-weight: 500; }
+    .badge-security { background: #FEE2E2; color: #991B1B; }
+    .badge-bug      { background: #FEF3C7; color: #92400E; }
+    .badge-perf     { background: #FEF9C3; color: #854D0E; }
+    .badge-completed{ background: #DCFCE7; color: #166534; }
+    .badge-failed   { background: #FEE2E2; color: #991B1B; }
+    .view-link { color: #534AB7; text-decoration: none; font-size: 13px; }
+    .view-link:hover { text-decoration: underline; }
+
+    /* ── Severity bar ── */
+    .severity-bar { display: flex; gap: 4px; align-items: center; }
+    .sev-seg { height: 8px; border-radius: 2px; flex: 1; background: #EAECEF; }
+    .sev-seg.filled.security    { background: #EF4444; }
+    .sev-seg.filled.bug         { background: #F97316; }
+    .sev-seg.filled.performance { background: #EAB308; }
+  </style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">Code<span>Sense</span> AI</div>
+  <a href="/dashboard"         class="nav-item active">📊 Overview</a>
+  <a href="/dashboard/reviews" class="nav-item">🔍 Reviews</a>
+  <a href="/dashboard/repositories" class="nav-item">📁 Repositories</a>
+  <a href="/dashboard/settings" class="nav-item" sec:authorize="hasRole('ADMIN')">
+    ⚙️ Settings
+  </a>
+  <a href="/logout" class="nav-item" style="margin-top:auto">👤 Sign out</a>
+</nav>
+
+<!-- ── Main content ── -->
+<main class="main">
+
+  <!-- Header + period selector -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Dashboard</div>
+      <div style="font-size:13px;color:#6C757D;margin-top:4px">
+        Showing last <span th:text="${selectedDays}">30</span> days
+      </div>
+    </div>
+    <div class="period-selector">
+      <th:block th:each="days : ${periodOptions}">
+        <a th:href="@{/dashboard(days=${days})}"
+           th:text="${days + 'd'}"
+           th:classappend="${days == selectedDays} ? 'active' : ''"
+           class="period-btn">30d</a>
+      </th:block>
+    </div>
+  </div>
+
+  <!-- ── Stat cards ── -->
+  <div class="cards-grid">
+    <div class="card reviews">
+      <div class="card-label">Total Reviews</div>
+      <div class="card-value" th:text="${overview.totalReviews}">0</div>
+      <div class="card-sub">
+        <span th:text="${#numbers.formatDecimal(overview.issuesPerReview, 1, 1)}">0.0</span>
+        issues per review
+      </div>
+    </div>
+    <div class="card security">
+      <div class="card-label">Issues Found</div>
+      <div class="card-value" th:text="${overview.totalIssues}">0</div>
+      <div class="card-sub">across all categories</div>
+    </div>
+    <div class="card cache">
+      <div class="card-label">Cache Hit Rate</div>
+      <div class="card-value" th:text="${overview.cacheHitRatePercent()}">0%</div>
+      <div class="card-sub">files skipped via cache</div>
+    </div>
+    <div class="card cost">
+      <div class="card-label">AI Cost This Month</div>
+      <div class="card-value">
+        $<span th:text="${#numbers.formatDecimal(costThisMonth, 1, 2)}">0.00</span>
+      </div>
+      <div class="card-sub">
+        Projected: $<span th:text="${#numbers.formatDecimal(projectedMonthlyCost, 1, 2)}">0.00</span>/mo
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main chart + category pie ── -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Reviews per Day</div>
+      <canvas id="reviewsChart" height="100"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Issues by Category</div>
+      <canvas id="categoryChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Token + cost charts ── -->
+  <div class="chart-row">
+    <div class="chart-card">
+      <div class="chart-title">Token Usage per Day</div>
+      <canvas id="tokenChart" height="120"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">AI Cost per Day (USD)</div>
+      <canvas id="costChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Top repos table ── -->
+  <div class="table-card">
+    <div class="table-header">
+      <div style="font-size:15px;font-weight:500">Top Repositories</div>
+      <a href="/dashboard/repositories" class="view-link">View all →</a>
+    </div>
+    <table>
+      <thead>
+      <tr>
+        <th>Repository</th>
+        <th>Reviews</th>
+        <th>Issues Found</th>
+        <th>Issues / Review</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="repo : ${topRepos}">
+        <td>
+          <strong th:text="${repo.fullName()}">owner/repo</strong>
+        </td>
+        <td th:text="${repo.totalReviews}">0</td>
+        <td th:text="${repo.totalIssues}">0</td>
+        <td th:text="${#numbers.formatDecimal(repo.issuesPerReview(), 1, 1)}">0.0</td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(topRepos)}">
+        <td colspan="4" style="text-align:center;color:#6C757D;padding:24px">
+          No reviews yet — open a PR to get started!
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Recent reviews table ── -->
+  <div class="table-card">
+    <div class="table-header">
+      <div style="font-size:15px;font-weight:500">Recent Reviews</div>
+      <a href="/dashboard/reviews" class="view-link">View all →</a>
+    </div>
+    <table>
+      <thead>
+      <tr>
+        <th>Pull Request</th>
+        <th>Repository</th>
+        <th>Status</th>
+        <th>Comments</th>
+        <th>Tokens</th>
+        <th>Time</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="review : ${recentReviews}">
+        <td>
+          <div th:text="${review.pullRequest.title}"
+               style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            PR Title
+          </div>
+          <div style="font-size:12px;color:#6C757D">
+            PR #<span th:text="${review.pullRequest.githubPrNumber}">42</span>
+            by <span th:text="${review.pullRequest.author}">author</span>
+          </div>
+        </td>
+        <td th:text="${review.pullRequest.repository.owner + '/' + review.pullRequest.repository.name}">
+          owner/repo
+        </td>
+        <td>
+                        <span class="badge"
+                              th:classappend="${review.status == 'COMPLETED'} ? 'badge-completed' : 'badge-failed'"
+                              th:text="${review.status}">COMPLETED</span>
+        </td>
+        <td th:text="${review.commentsPosted}">0</td>
+        <td th:text="${#numbers.formatInteger(review.tokensUsed, 3, 'COMMA')}">0</td>
+        <td style="font-size:12px;color:#6C757D">
+          <span th:text="${#temporals.format(review.createdAt, 'MMM d HH:mm')}">Jan 1</span>
+        </td>
+        <td>
+          <a th:href="@{/dashboard/reviews/{id}(id=${review.id})}"
+             class="view-link">View →</a>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- ── Chart.js initialization ── -->
+<script th:inline="javascript">
+  const reviewsData  = /*[[${reviewsChartJson}]]*/ '{}';
+  const categoryData = /*[[${issuesCategoryJson}]]*/ '{}';
+  const tokenData    = /*[[${tokenUsageJson}]]*/ '{}';
+  const costData     = /*[[${costTrendJson}]]*/ '{}';
+
+  // Reviews per day — line chart
+  new Chart(document.getElementById('reviewsChart'), {
+      type: 'line',
+      data: JSON.parse(reviewsData),
+      options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+              y: { beginAtZero: true, ticks: { precision: 0 } }
+          }
+      }
+  });
+
+  // Issues by category — doughnut chart
+  new Chart(document.getElementById('categoryChart'), {
+      type: 'doughnut',
+      data: JSON.parse(categoryData),
+      options: {
+          responsive: true,
+          plugins: {
+              legend: { position: 'bottom' }
+          },
+          cutout: '65%'
+      }
+  });
+
+  // Token usage — area chart
+  new Chart(document.getElementById('tokenChart'), {
+      type: 'line',
+      data: JSON.parse(tokenData),
+      options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+      }
+  });
+
+  // Cost trend — area chart
+  new Chart(document.getElementById('costChart'), {
+      type: 'line',
+      data: JSON.parse(costData),
+      options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+      }
+  });
+</script>
+
+</body>
+</html>

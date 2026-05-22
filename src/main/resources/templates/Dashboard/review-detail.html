@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Review Detail — CodeSense AI</title>
+  <style>
+    /* shared styles omitted for brevity — same as index.html */
+    body { font-family: -apple-system, sans-serif; background:#F8F9FA;
+           color:#1A1A2E; margin:0; }
+    .main { max-width: 900px; margin: 0 auto; padding: 32px; }
+    .back-link { color:#534AB7; text-decoration:none; font-size:14px;
+                 display:block; margin-bottom:20px; }
+    .card { background:#fff; border-radius:12px; border:1px solid #EAECEF;
+            padding:24px; margin-bottom:20px; }
+    .card-title { font-size:16px; font-weight:600; margin-bottom:16px; }
+    .meta-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .meta-item { }
+    .meta-label { font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+                  color:#6C757D; margin-bottom:4px; }
+    .meta-value { font-size:15px; font-weight:500; }
+    .comment-item { border:1px solid #EAECEF; border-radius:8px;
+                    overflow:hidden; margin-bottom:12px; }
+    .comment-header { padding:10px 14px; background:#F8F9FA;
+                      display:flex; justify-content:space-between;
+                      align-items:center; border-bottom:1px solid #EAECEF; }
+    .comment-file { font-family:monospace; font-size:12px; color:#495057; }
+    .comment-line { font-size:12px; color:#6C757D; }
+    .comment-body { padding:14px; font-size:14px; line-height:1.6;
+                    white-space:pre-wrap; }
+    .severity-chip { display:inline-block; padding:2px 8px; border-radius:100px;
+                     font-size:11px; font-weight:500; }
+    .sev-critical { background:#FEE2E2; color:#991B1B; }
+    .sev-high     { background:#FEF3C7; color:#92400E; }
+    .sev-medium   { background:#DCFCE7; color:#166534; }
+    .sev-low      { background:#F3F4F6; color:#6B7280; }
+    .stat-row { display:flex; gap:24px; flex-wrap:wrap; }
+    .stat { text-align:center; }
+    .stat-val { font-size:24px; font-weight:600; }
+    .stat-lab { font-size:12px; color:#6C757D; }
+  </style>
+</head>
+<body>
+<main class="main">
+
+  <a href="/dashboard/reviews" class="back-link">← Back to reviews</a>
+
+  <!-- ── Session summary card ── -->
+  <div class="card">
+    <div class="card-title">
+      PR #<span th:text="${pr.githubPrNumber}">42</span>:
+      <span th:text="${pr.title}">PR Title</span>
+    </div>
+
+    <div class="meta-grid" style="margin-bottom:20px">
+      <div class="meta-item">
+        <div class="meta-label">Repository</div>
+        <div class="meta-value"
+             th:text="${repo.owner + '/' + repo.name}">owner/repo</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Author</div>
+        <div class="meta-value" th:text="${pr.author}">developer</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Status</div>
+        <div class="meta-value" th:text="${session.status}">COMPLETED</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">AI Model</div>
+        <div class="meta-value" th:text="${session.modelUsed}">gpt-4o</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Reviewed</div>
+        <div class="meta-value"
+             th:text="${#temporals.format(session.createdAt, 'MMM d, yyyy HH:mm')}">
+          Jan 1, 2025
+        </div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">GitHub Review ID</div>
+        <div class="meta-value" th:text="${session.githubReviewId}">—</div>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-val" th:text="${session.commentsPosted}">0</div>
+        <div class="stat-lab">Comments posted</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" th:text="${session.filesReviewed}">0</div>
+        <div class="stat-lab">Files reviewed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" th:text="${session.filesCached}">0</div>
+        <div class="stat-lab">Files cached</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val"
+             th:text="${#numbers.formatInteger(session.tokensUsed, 3, 'COMMA')}">0</div>
+        <div class="stat-lab">Tokens used</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" th:text="${session.totalAdditions}">0</div>
+        <div class="stat-lab">Lines added</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" th:text="${session.totalRemovals}">0</div>
+        <div class="stat-lab">Lines removed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Inline comments ── -->
+  <div class="card">
+    <div class="card-title">
+      Inline Comments
+      (<span th:text="${#lists.size(session.reviewComments)}">0</span>)
+    </div>
+
+    <div th:if="${#lists.isEmpty(session.reviewComments)}"
+         style="text-align:center;padding:32px;color:#6C757D">
+      No inline comments were posted for this review.
+    </div>
+
+    <div th:each="comment : ${session.reviewComments}" class="comment-item">
+      <div class="comment-header">
+                <span class="comment-file" th:text="${comment.filePath}">
+                    src/main/java/UserService.java
+                </span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="comment-line">Line <span th:text="${comment.lineNumber}">42</span></span>
+          <span class="severity-chip"
+                th:classappend="${comment.severity >= 80} ? 'sev-critical' :
+                                          (${comment.severity >= 60} ? 'sev-high' :
+                                          (${comment.severity >= 40} ? 'sev-medium' : 'sev-low'))"
+                th:text="${comment.category + ' · ' + comment.severity + '/100'}">
+                        SECURITY · 90/100
+                    </span>
+        </div>
+      </div>
+      <div class="comment-body" th:text="${comment.body}">
+        Comment body here.
+      </div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>
