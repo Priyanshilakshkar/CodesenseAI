@@ -2,11 +2,13 @@ package com.codeSense_Ai.Rule;
 
 import com.codeSense_Ai.model.DiffLine;
 import com.codeSense_Ai.model.ReviewIssue;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+@Component
 public class SecurityRules {
     /**
      * A security rule definition — pattern + severity + message.

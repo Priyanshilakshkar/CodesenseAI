@@ -51,7 +51,7 @@ public class ReviewSession {
 
     private Integer bugIssues = 0;
 
-    private Integer CommentsPosted;
+    private Integer commentsPosted;
 
     private Integer styleIssues = 0;
 

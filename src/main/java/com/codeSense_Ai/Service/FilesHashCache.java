@@ -27,40 +27,47 @@ public class FilesHashCache {
     @Value("${codesense.review.file-hash-cache-ttl-hours:24}")
     private int cacheTtlHours;
 
-    public Optional<CachedReviewResult> get(String blobSha){
+    public Optional<CachedReviewResult> get(String blobSha) {
+
+        if (blobSha == null || blobSha.isBlank()) {
+            return Optional.empty();
+        }
+
         Optional<CachedReviewResult> redisResult = getFromRedis(blobSha);
+
         if (redisResult.isPresent()) {
             log.debug("Redis cache hit for blob sha {}", abbreviated(blobSha));
             return redisResult;
         }
 
         Optional<CachedReviewResult> dbResult = getFromDatabase(blobSha);
-        if (dbResult.isPresent()) {
-            log.debug("DB cache hit for blob sha {} — backfilling Redis", abbreviated(blobSha));
 
+        if (dbResult.isPresent()) {
+            log.debug("DB cache hit for blob sha {} — backfilling Redis",
+                    abbreviated(blobSha));
 
             putInRedis(blobSha, dbResult.get());
             return dbResult;
         }
 
-        log.debug("Cache miss for blob sha {}", abbreviated(blobSha));
         return Optional.empty();
     }
 
     public boolean contains(String blobSha) {
 
-        Boolean existsInRedis = stringRedisTemplate.hasKey(KEY_PREFIX + blobSha);
+        if (blobSha == null || blobSha.isBlank()) {
+            log.debug("Skipping cache lookup because blob SHA is null/blank");
+            return false;
+        }
+
+        Boolean existsInRedis =
+                stringRedisTemplate.hasKey(KEY_PREFIX + blobSha);
+
         if (Boolean.TRUE.equals(existsInRedis)) {
             return true;
         }
-        // Fall back to DB check
+
         return cacheRepository.findByFileHash(blobSha).isPresent();
-    }
-    public void evict(String blobSha) {
-        stringRedisTemplate.delete(KEY_PREFIX + blobSha);
-        cacheRepository.findByFileHash(blobSha)
-                .ifPresent(cacheRepository::delete);
-        log.info("Evicted cache entry for sha {}", abbreviated(blobSha));
     }
 
     /**

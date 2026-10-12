@@ -29,11 +29,6 @@ public class GithubApiClient {
     public List<GithubFile>  getPullRequestFiles(String owner, String repo,
                                                  int prNumber, Long installationId){
         String token  = githubAppAuthenticator.generateIntallationToken(installationId);
-        RestClient.ResponseSpec response = restClient.get()
-                .uri("/repos/{owner}/{repo}/pulls/{pr}/files", owner, repo, prNumber)
-                .header("Authorization", "Bearer " + token)
-                .header("Accept", "application/vnd.github+json")
-                .retrieve();
 
         return restClient.get()
                 .uri("/repos/{owner}/{repo}/pulls/{pr}/files", owner, repo, prNumber)

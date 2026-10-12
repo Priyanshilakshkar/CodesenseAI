@@ -18,7 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class GitHubFetchDiffService {
-    private final GithubAppAuthenticator githubAppAuthenticator;
+
     private final RateLimitTracker rateLimitTracker;
     private final GithubApiClient apiClient;
     private final FilesHashCache filesHashCache;
@@ -29,8 +29,6 @@ public class GitHubFetchDiffService {
         Long installationId  = repositories.getInstallation_id();
 
         checkRateLimit(owner , repo);
-
-        String token  = githubAppAuthenticator.generateIntallationToken(installationId);
 
         List<GithubFile> allFiles = apiClient.getPullRequestFiles(owner , repo ,pnrNumber , installationId);
 
@@ -61,10 +59,12 @@ public class GitHubFetchDiffService {
         for(GithubFile file : allFiles){
             if(!file.hasPatch()){
                 skipped.add(file);
+                continue;
             }
 
             if(file.isLikelyNotReviewable()){
                 skipped.add(file);
+                continue;
             }
 
             if(filesHashCache.contains(file.blobSha())){

@@ -5,6 +5,7 @@ import com.codeSense_Ai.Enties.ReviewSession;
 import com.codeSense_Ai.Repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -136,7 +137,9 @@ public class AnalyticsService {
      * Top repositories by issue count — powers the bar chart.
      */
     public List<RepoStats> getTopReposByIssues(int limit) {
-        List<Object[]> raw = sessionRepository.getTopReposByIssueCount(limit);
+        List<Object[]> raw = sessionRepository.getTopReposByIssueCount(
+                PageRequest.of(0, limit)
+        );
         return raw.stream()
                 .map(row -> new RepoStats(
                         (String) row[0],  // owner

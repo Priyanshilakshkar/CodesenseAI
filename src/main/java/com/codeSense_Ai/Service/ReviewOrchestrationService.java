@@ -1,5 +1,6 @@
 package com.codeSense_Ai.Service;
 
+import com.codeSense_Ai.Auth.GithubAppAuthenticator;
 import com.codeSense_Ai.Diff.UnifiedDiffParser;
 import com.codeSense_Ai.Dto.DiffFetchResult;
 import com.codeSense_Ai.Dto.GithubFile;
@@ -8,6 +9,7 @@ import com.codeSense_Ai.Enties.AIRequestLog;
 import com.codeSense_Ai.Enties.PullRequests;
 import com.codeSense_Ai.Enties.Repositories;
 import com.codeSense_Ai.Enties.ReviewSession;
+import com.codeSense_Ai.Enums.AIRequestStatus;
 import com.codeSense_Ai.Enums.ReviewSessionStatus;
 import com.codeSense_Ai.Enums.States;
 import com.codeSense_Ai.Exceptions.RateLimitExceededException;
@@ -35,6 +37,8 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class ReviewOrchestrationService {
+
+    private final GithubAppAuthenticator githubAppAuthenticator;
     private final GitHubFetchDiffService diffFetchService;
 
     // ── Week 4 ────────────────────────────────────────────────────
@@ -90,7 +94,12 @@ public class ReviewOrchestrationService {
 
         try {
             // ── Stage 3: Load repo config ─────────────────────────
-            String token = null; // loaded lazily in diffFetchService
+
+            String token = githubAppAuthenticator.generateIntallationToken(
+                    job.getInstallationId()
+            );
+
+
             RepoReviewConfig config = ruleLoader.load(repository, token);
             log.info("Loaded config for {}/{}: maxComments={} model={}",
                     job.getOwner(), job.getRepoName(),
@@ -149,7 +158,7 @@ public class ReviewOrchestrationService {
     // ── Stage implementations ─────────────────────────────────────────────────
 
     private Repositories loadRepository(ReviewJob job) {
-        return repoRepository.findById(job.getRepositoryId())
+        return repoRepository.findByGithubRepoId(job.getRepositoryId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Repository not found: id=" + job.getRepositoryId()
                 ));
@@ -157,7 +166,7 @@ public class ReviewOrchestrationService {
 
     private PullRequests loadOrCreatePullRequest(ReviewJob job, Repositories repository) {
         return prRepository
-                .findByRepositoryIdAndGithubPrNumber(
+                .findByRepositoryIdAndPrNumber(
                         repository.getId(), job.getPrNumber())
                 .orElseGet(() -> {
                     // First time we've seen this PR — create the entity
@@ -169,6 +178,10 @@ public class ReviewOrchestrationService {
                     pr.setHeadSha(job.getHeadSha());
                     pr.setStates(States.OPEN);
                     pr.setCreatedAt(Instant.now());
+                    pr.setBaseBranch(job.getBaseBranch());
+                    pr.setBaseSha(job.getBaseSha());
+                    pr.setHeadBranch(job.getHeadBranch());
+                    pr.setGithubPrId(job.getGithubPrId());
                     return prRepository.save(pr);
                 });
     }
@@ -180,6 +193,8 @@ public class ReviewOrchestrationService {
         session.setJobId(job.getJobId());
         session.setAttemptNumber(job.getAttemptNumber());
         session.setCreatedAt(Instant.now());
+        session.setRepository(pullRequest.getRepository());
+        session.setTriggerSha(job.getHeadSha());
         ReviewSession saved = sessionRepository.save(session);
         log.info("Created ReviewSession id={} for PR #{}",
                 saved.getId(), job.getPrNumber());
@@ -216,8 +231,17 @@ public class ReviewOrchestrationService {
         for (GithubFile file : diffResult.reviewableFiles()) {
             try {
                 DiffFile diffFile = diffParserEngine.diffParser(
-                        file.patch()
+                        file.patch(),
+                        file.filename()
                 );
+                log.info(
+                        "Parsed DiffFile: filename={}, oldPath={}, newPath={}, extension={}",
+                        file.filename(),
+                        diffFile.getOldPath(),
+                        diffFile.getNewPath(),
+                        diffFile.getExtension()
+                );
+
                 diffFiles.add(diffFile);
                 totalAdditions += diffFile.totalAdditions();
                 totalRemovals  += diffFile.totalRemovals();
@@ -347,6 +371,7 @@ public class ReviewOrchestrationService {
         log.setTotalTokens(tokensUsed);
         log.setModel(model);
         log.setCreatedAt(Instant.now());
+        log.setStatus(AIRequestStatus.SUCCESS);
         aiRequestLogRepository.save(log);
     }
 }

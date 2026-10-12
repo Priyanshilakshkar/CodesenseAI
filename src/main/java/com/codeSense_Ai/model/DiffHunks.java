@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Setter
@@ -17,7 +18,8 @@ public class DiffHunks {
     int oldLines;
     int newLines;
 
-    List<DiffLine> lines;
+    @Builder.Default
+    List<DiffLine> lines = new ArrayList<>();
 
     public void addLines(DiffLine line){
         this.lines.add(line);

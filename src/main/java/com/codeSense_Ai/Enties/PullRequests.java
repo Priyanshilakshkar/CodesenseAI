@@ -57,7 +57,7 @@ public class PullRequests {
 
     private Long authorGithubId;
 
-    @Column(length = 100)
+    @Column(length = 100 , name = "author")
     private String authorUserName;
 
     @Column(nullable = false, length = 200)

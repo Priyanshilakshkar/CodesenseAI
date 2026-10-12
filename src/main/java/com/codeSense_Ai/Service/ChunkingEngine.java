@@ -23,20 +23,45 @@ public class ChunkingEngine {
     // FunctionBoundaryDetector is injected into SemanticChunker  (Task 02)
 
     public List<CodeChunk> chunk(DiffFile diffFile) {
-        // Step 1: Choose strategy based on language
-        List<CodeChunk> rawChunks;
-        String ext = diffFile.getExtension();
 
-        if (List.of("java","py","js","ts").contains(ext)) {
-            rawChunks = semanticChunker.chunk(diffFile);   // smart, language-aware
-        } else {
-            rawChunks = genericStrategy.chunk(diffFile);   // hunk-based fallback
+        if (diffFile == null) {
+            throw new IllegalArgumentException("DiffFile cannot be null");
         }
 
-        // Step 2: Apply context overlap between chunks
-        List<CodeChunk> overlappedChunks = overlapStrategy.applyOverlap(rawChunks);
+        List<CodeChunk> rawChunks;
 
-        // Step 3: Sort by priority — security files first
+        String ext = diffFile.getExtension();
+
+        if (ext != null) {
+            ext = ext.toLowerCase();
+        }
+
+        log.info(
+                "Chunking file: oldPath={}, newPath={}, extension={}, hunks={}",
+                diffFile.getOldPath(),
+                diffFile.getNewPath(),
+                ext,
+                diffFile.getHunksList() != null
+                        ? diffFile.getHunksList().size()
+                        : 0
+        );
+
+        if (List.of("java", "py", "js", "ts").contains(ext)) {
+
+            log.info("Using SemanticChunker for extension '{}'", ext);
+
+            rawChunks = semanticChunker.chunk(diffFile);
+
+        } else {
+
+            log.info("Using GenericChunkingStrategy for extension '{}'", ext);
+
+            rawChunks = genericStrategy.chunk(diffFile);
+        }
+
+        List<CodeChunk> overlappedChunks =
+                overlapStrategy.applyOverlap(rawChunks);
+
         return prioritizer.prioritize(overlappedChunks);
     }
 }

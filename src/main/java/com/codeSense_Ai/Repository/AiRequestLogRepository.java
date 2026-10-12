@@ -11,7 +11,7 @@ import java.util.List;
 public interface AiRequestLogRepository extends JpaRepository<AIRequestLog , Long> {
     @Query("""
     SELECT SUM(a.promptTokens), SUM(a.completionTokens)
-    FROM AiRequestLog a
+    FROM AIRequestLog a
     WHERE a.createdAt >= :start AND a.createdAt < :end
     """)
     List<Object[]> getTokenBreakdownForDateRange(

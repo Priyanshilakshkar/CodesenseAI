@@ -101,6 +101,7 @@ public class SemanticChunker {
         return CodeChunk.builder()
                 .filePath(diffFile.getNewPath())
                 .extension(diffFile.getExtension())
+                .language(diffFile.getExtension())
                 .lines(new ArrayList<>(lines))
                 .estimatedTokens(tokenEstimator.estimateLines(
                         lines.stream().map(DiffLine::content).toList()))

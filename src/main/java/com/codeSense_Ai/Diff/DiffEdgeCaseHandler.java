@@ -1,7 +1,9 @@
 package com.codeSense_Ai.Diff;
 
 import com.codeSense_Ai.model.DiffFile;
+import org.springframework.stereotype.Component;
 
+@Component
 public class DiffEdgeCaseHandler {
     public boolean isBinaryFile(String line) {
         return line.startsWith("Binary files");

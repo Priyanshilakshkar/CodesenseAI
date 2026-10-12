@@ -3,10 +3,12 @@ package com.codeSense_Ai.Chunking;
 import com.codeSense_Ai.Enums.DiffLineType;
 import com.codeSense_Ai.model.CodeChunk;
 import com.codeSense_Ai.model.DiffLine;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class OverlapStrategy {
     private static final int OVERLAP_LINES = 15;
 

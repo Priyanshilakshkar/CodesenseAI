@@ -34,4 +34,15 @@ public class DiffLine {
     public boolean isAdded() {
         return this.type == DiffLineType.ADDED;
     }
+    public boolean isChanged() {
+        return type == DiffLineType.ADDED || type == DiffLineType.REMOVED;
+    }
+    public boolean isContext(){
+        return type == DiffLineType.CONTEXT;
+    }
+    public int displayLineNumber() {
+        if (newLineNum != null) return newLineNum;
+        if (oldLineNum != null) return oldLineNum;
+        return 0;
+    }
 }

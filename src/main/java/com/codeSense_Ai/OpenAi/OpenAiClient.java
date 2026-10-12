@@ -26,7 +26,7 @@ public class OpenAiClient {
      public OpenAiResponse call(String SystemPrompt , String userPrompt , String model){
          Map<String , Object>  requestBody  =  Map.of(
                  "model"  , model,
-                 "maxTokens" ,  openAiProperties.getMaxTokens(),
+                 "max_tokens", openAiProperties.getMaxTokens(),
 
                  "response_format" , Map.of("type" , "json_object"),
 
@@ -43,8 +43,7 @@ public class OpenAiClient {
 
              OpenAiRawResponse raw = restClient.post()
                      .uri(openAiProperties.getBaseUrl() + "/chat/completions")
-                     .header(HttpHeaders.AUTHORIZATION ,"Bearer" + openAiProperties.getApiKey())
-                     .header(HttpHeaders.CONTENT_TYPE , MediaType.APPLICATION_JSON_VALUE)
+                     .header(HttpHeaders.AUTHORIZATION, openAiProperties.getAuthorizationHeader())
                      .body(requestBody)
                      .retrieve()
                      .body(OpenAiRawResponse.class);

@@ -1,8 +1,11 @@
 package com.codeSense_Ai.Chunking;
 
+import org.springframework.stereotype.Component;
+
 import java.util.List;
 import java.util.regex.Pattern;
 
+@Component
 public class FunctionBoundaryDetector {
     private static final Pattern JAVA_METHOD_START = Pattern.compile(
             "^\\s*(public|private|protected|static|final|abstract|synchronized)" +

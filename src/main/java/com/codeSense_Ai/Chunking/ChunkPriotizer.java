@@ -1,10 +1,15 @@
 package com.codeSense_Ai.Chunking;
 
+import com.codeSense_Ai.Enums.DiffLineType;
 import com.codeSense_Ai.model.CodeChunk;
+import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 import java.util.List;
 
+import static reactor.netty.http.HttpConnectionLiveness.log;
+
+@Component
 public class ChunkPriotizer {
     private static final List<String> SECURITY_PATH_PATTERNS = List.of(
             "auth", "security", "crypto", "password", "token",
@@ -39,7 +44,7 @@ public class ChunkPriotizer {
      * Higher score = reviewed sooner.
      */
     private int calculatePriority(CodeChunk chunk) {
-        String path = chunk.filePath().toLowerCase();
+        String path = chunk.getFilePath().toLowerCase();
         int score = 0;
 
         // ── Tier 1: Security-sensitive files (highest priority) ──
@@ -54,8 +59,8 @@ public class ChunkPriotizer {
 
         // ── Tier 3: Most lines changed ───────────────────────────
         // More changes = more potential issues
-        long changedLineCount = chunk.lines().stream()
-                .filter(line -> line. != DiffLine.Type.CONTEXT)
+        long changedLineCount = chunk.getLines().stream()
+                .filter(line -> line.getType() != DiffLineType.CONTEXT)
                 .count();
         score += (int) Math.min(changedLineCount * 10, 300); // cap at 300
 
@@ -66,10 +71,10 @@ public class ChunkPriotizer {
 
         // ── Tier 5: Larger chunks reviewed before tiny ones ──────
         // A 5000-token chunk has more review value than a 50-token chunk
-        score += chunk.estimatedTokens() / 100;
+        score += chunk.getEstimatedTokens() / 100;
 
         log.debug("Priority score for {}: {} (security={}, core={}, changes={}, low={})",
-                chunk.filePath(), score, isSecurity, isCoreLogic, changedLineCount, isLowPriority);
+                chunk.getFilePath(), score, isSecurity, isCoreLogic, changedLineCount, isLowPriority);
 
         return score;
     }

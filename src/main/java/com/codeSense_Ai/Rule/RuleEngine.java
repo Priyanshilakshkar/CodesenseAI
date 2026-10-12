@@ -131,7 +131,7 @@ public class RuleEngine {
 
         for (DiffFile diffFile : diffFiles) {
             // Only scan ADDED lines — removed lines are already gone
-            List<DiffLine> addedLines = diffFile.getAllLines().stream()
+            List<DiffLine> addedLines = diffFile.allLines().stream()
                     .filter(DiffLine::isAdded)
                     .toList();
 
@@ -198,7 +198,7 @@ public class RuleEngine {
                 new java.util.HashMap<>();
         for (DiffFile f : diffFiles) {
             java.util.Map<Integer, String> byLine = new java.util.HashMap<>();
-            f.getAllLines().stream()
+            f.allLines().stream()
                     .filter(l -> l.getNewLineNum() != null)
                     .forEach(l -> byLine.put(l.getNewLineNum(), l.content()));
             lineContents.put(f.getNewPath(), byLine);

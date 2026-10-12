@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
 @Setter
 @Builder
 @ConfigurationProperties(prefix = "codesense.openai")
-@Component
+
 @Validated
 public class OpenAiProperties {
     /**

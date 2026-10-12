@@ -1,39 +1,53 @@
 package com.codeSense_Ai.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.extern.jackson.Jacksonized;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 
 @Getter
 @Builder
-public class ReviewJob {
+@Jacksonized
+@NoArgsConstructor
+@AllArgsConstructor
+public class ReviewJob implements Serializable {
     @Builder.Default
-    private final String jobId = UUID.randomUUID().toString();
+    private  String jobId = UUID.randomUUID().toString();
 
-    private final String webhookDeliveryId;
+    private  String webhookDeliveryId;
 
-    private final Long repositoryId;
+    private  Long repositoryId;
 
-    private final String owner;
+    private  String owner;
 
-    private final String repoName;
+    private  String repoName;
 
-    private final Long installationId;
+    private  Long installationId;
 
-    private final int prNumber;
+    private  int prNumber;
 
-    private final String headSha;
+    private Long githubPrId;
 
-    private final String prAuthor;
+    private  String headSha;
 
-    private final String prTitle;
+    private  String prAuthor;
+
+    private  String prTitle;
+
+    private  String baseBranch;
+    private  String headBranch;
+
+    private  String baseSha;
 
     @Builder.Default
     private final Instant createdAt = Instant.now();
 
-    private final Instant processAfter;
+    private  Instant processAfter;
 
     @Builder.Default
     private final int attemptNumber = 1;
@@ -54,6 +68,10 @@ public class ReviewJob {
                 .owner(this.owner)
                 .repoName(this.repoName)
                 .installationId(this.installationId)
+                .githubPrId(this.githubPrId)
+                .baseBranch(this.baseBranch)
+                .headBranch(this.headBranch)
+                .baseSha(this.baseSha)
                 .prNumber(this.prNumber)
                 .headSha(this.headSha)
                 .prAuthor(this.prAuthor)

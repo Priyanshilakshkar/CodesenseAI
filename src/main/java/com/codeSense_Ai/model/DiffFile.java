@@ -18,7 +18,7 @@ public class DiffFile {
     private boolean binaryFile;
 
     private boolean renamedFile;
-    List<DiffHunks> hunksList;
+    private List<DiffHunks> hunksList = new ArrayList<>();
 
 
     public boolean isDeletedFile() {
@@ -49,23 +49,17 @@ public class DiffFile {
         this.hunksList.add(hunk);
     }
 
-    public List<DiffLine> getAllLines() {
-
-        List<DiffLine> allLines = new ArrayList<>();
-
-        for (DiffHunks hunk : hunksList) {
-
-            allLines.addAll(hunk.getLines());
-        }
-
-        return allLines;
+    public List<DiffLine> allLines() {
+        return hunksList.stream()
+                .flatMap(hunk -> hunk.getLines().stream())
+                .toList();
     }
 
     public int totalAdditions() {
 
         int count = 0;
 
-        for (DiffLine line : getAllLines()) {
+        for (DiffLine line : allLines()) {
 
             if (line.getType() == DiffLineType.ADDED) {
                 count++;
@@ -78,7 +72,7 @@ public class DiffFile {
 
         int count = 0;
 
-        for (DiffLine line : getAllLines()) {
+        for (DiffLine line : allLines()) {
 
             if (line.getType() == DiffLineType.REMOVED) {
                 count++;
@@ -87,6 +81,7 @@ public class DiffFile {
 
         return count;
     }
+
     public Integer diffPositionForLine(int targetLine) {
 
         int position = 0;
@@ -98,11 +93,13 @@ public class DiffFile {
                 // Every visible diff line increments GitHub position
                 position++;
 
+                Integer newLineNum = line.getNewLineNum();
+
                 /*
-                 * Only ADDED or CONTEXT lines belong to the NEW file.
-                 * Deleted lines do not exist in the new file.
+                 * Only lines belonging to the new file
+                 * can match the target line.
                  */
-                if (line.getNewLineNum() == targetLine) {
+                if (newLineNum != null && newLineNum == targetLine) {
                     return position;
                 }
             }
@@ -111,6 +108,7 @@ public class DiffFile {
         // Line not found in diff
         return null;
     }
+
 
 
 

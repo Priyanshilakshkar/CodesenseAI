@@ -2,11 +2,12 @@ package com.codeSense_Ai.OpenAi;
 
 import com.codeSense_Ai.model.ReviewIssue;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 import static reactor.netty.http.HttpConnectionLiveness.log;
-
+@Component
 public class ConfidenceFilter {
     @Value("${codesense.openai.confidence-threshold:70}")
     private int threshold;

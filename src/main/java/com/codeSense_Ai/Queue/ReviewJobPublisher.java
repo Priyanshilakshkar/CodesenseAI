@@ -1,8 +1,10 @@
 package com.codeSense_Ai.Queue;
 
+import com.codeSense_Ai.Config.RabbitMQConfig;
 import com.codeSense_Ai.model.ReviewJob;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -13,35 +15,58 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class ReviewJobPublisher {
 
-    private final ReviewJobConsumer consumer;
+    private final RabbitTemplate rabbitTemplate;
 
-    public void publish(ReviewJob job){
+    public void publish(ReviewJob job) {
+
         log.info("Publishing review job: {}", job);
-        consumer.consume(job);
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.REVIEW_QUEUE,
+                job
+        );
     }
 
-    public void publishWithDelay(ReviewJob job , Duration dalay){
-        Instant processAfter = Instant.now().plus(dalay);
-        ReviewJob job1 = job.asRetry(processAfter);
+    public void publishWithDelay(ReviewJob job, Duration delay) {
 
+        Instant processAfter = Instant.now().plus(delay);
 
-        log.info("Publishing delayed review job: {} — processAfter={}",
-                job1, processAfter);
+        ReviewJob retryJob = job.asRetry(processAfter);
 
-        consumer.consume(job);
+        log.info(
+                "Publishing delayed review job: {} — processAfter={}",
+                retryJob,
+                processAfter
+        );
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.REVIEW_QUEUE,
+                retryJob
+        );
     }
 
-    public void publishWithRetry(ReviewJob job , Duration delay){
-        if(job.hasExceededRetries(3)){
-            log.error("Job {} exceeded max retries — sending to dead letter: {}",
-                    job.getJobId(), job);
+    public void publishWithRetry(ReviewJob job, Duration delay) {
+
+        if (job.hasExceededRetries(3)) {
+
+            log.error(
+                    "Job {} exceeded max retries — dead letter",
+                    job.getJobId()
+            );
+
             handleDeadLetter(job);
+
             return;
         }
+
         publishWithDelay(job, delay);
     }
 
-    public void handleDeadLetter(ReviewJob job){
-        log.error("DEAD LETTER: Review job permanently failed after 3 attempts: {}", job);
+    public void handleDeadLetter(ReviewJob job) {
+
+        log.error(
+                "DEAD LETTER: Review job permanently failed: {}",
+                job
+        );
     }
 }

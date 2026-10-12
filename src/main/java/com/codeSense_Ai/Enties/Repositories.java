@@ -36,7 +36,7 @@ public class Repositories {
     private Long installation_id;
 
     @Lob
-    @Column( nullable = false)
+    @Column( nullable = true)
     private String webhookSecret;
 
     @Column(nullable = false )

@@ -28,7 +28,7 @@ public class WebhookEvent {
     private String action;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false , columnDefinition = "LONGTEXT")
     private String payloadJson;
 
     private Boolean signatureValid = false;

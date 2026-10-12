@@ -1,5 +1,7 @@
 package com.codeSense_Ai.Dto;
 
+import com.codeSense_Ai.model.ReviewIssue;
+
 import java.util.List;
 
 public record CachedReviewResult(

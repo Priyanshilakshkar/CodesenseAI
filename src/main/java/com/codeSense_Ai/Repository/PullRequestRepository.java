@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface PullRequestRepository extends JpaRepository<PullRequests , Long> {
-    Optional<PullRequests> findByRepositoryIdAndGithubPrNumber(Long repositoryId , Integer prNumber);
+    Optional<PullRequests> findByRepositoryIdAndPrNumber(Long repositoryId , Integer prNumber);
 
 }
