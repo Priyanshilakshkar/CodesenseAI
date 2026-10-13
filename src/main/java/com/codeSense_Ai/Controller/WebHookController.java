@@ -58,6 +58,11 @@ public class WebHookController {
         }
         WebhookPayload payload = parsePayload(rawPayload);
 
+        log.info("Webhook signature validation SUCCESS!");
+        log.info("GitHub event type: {}", eventType);
+        log.info("GitHub delivery ID: {}", deliveryId);
+        log.info("Webhook payload parsed successfully");
+
 
         if (replayProtector.payloadProtector(deliveryId)) {
             log.info("Duplicate delivery {} — ignoring", deliveryId);
@@ -107,10 +112,15 @@ public class WebHookController {
             if ("created".equals(payload.action())
                     || "unsuspend".equals(payload.action())) {
 
+                log.info("Starting repository sync for installation {}",
+                        installationId);
+
                 installationRepositorySyncService
                         .syncInstallationRepositories(installationId);
 
-            } else if ("deleted".equals(payload.action())) {
+                log.info("Repository sync completed for installation {}",
+                        installationId);
+            }else if ("deleted".equals(payload.action())) {
 
                 installationRepositorySyncService
                         .deactivateInstallationRepositories(installationId);
