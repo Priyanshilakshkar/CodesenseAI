@@ -98,6 +98,12 @@ public class WebHookController {
 
             Long installationId = payload.installation().id();
 
+            log.info(
+                    "Installation event received: action={}, installationId={}",
+                    payload.action(),
+                    installationId
+            );
+
             if ("created".equals(payload.action())
                     || "unsuspend".equals(payload.action())) {
 
