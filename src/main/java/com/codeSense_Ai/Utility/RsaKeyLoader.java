@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyFactory;
@@ -18,30 +19,36 @@ import java.util.Base64;
 public class RsaKeyLoader {
 
     public PrivateKey loadPrivateKey(String pemFilePath) {
-
         try {
-
             System.out.println(
-                    "Loading GitHub private key from resources: "
-                            + pemFilePath
+                    "Loading GitHub private key from: " + pemFilePath
             );
-
-            ClassPathResource resource =
-                    new ClassPathResource(pemFilePath);
-
-            if (!resource.exists()) {
-                throw new RuntimeException(
-                        "Private key file not found in resources: "
-                                + pemFilePath
-                );
-            }
 
             String pem;
 
-            try (InputStream inputStream = resource.getInputStream()) {
-                pem = new String(
-                        inputStream.readAllBytes()
-                );
+            // First, try the external filesystem path (Render).
+            Path path = Path.of(pemFilePath);
+
+            if (path.isAbsolute() && Files.isRegularFile(path)) {
+                pem = Files.readString(path, StandardCharsets.UTF_8);
+            } else {
+                // Otherwise, try the classpath (local development).
+                ClassPathResource resource =
+                        new ClassPathResource(pemFilePath);
+
+                if (!resource.exists()) {
+                    throw new RuntimeException(
+                            "Private key not found at filesystem path "
+                                    + "or classpath: " + pemFilePath
+                    );
+                }
+
+                try (InputStream inputStream = resource.getInputStream()) {
+                    pem = new String(
+                            inputStream.readAllBytes(),
+                            StandardCharsets.UTF_8
+                    );
+                }
             }
 
             String base64 = pem
@@ -49,8 +56,7 @@ public class RsaKeyLoader {
                     .replace("-----END RSA PRIVATE KEY-----", "")
                     .replaceAll("\\s+", "");
 
-            byte[] keyBytes =
-                    Base64.getDecoder().decode(base64);
+            byte[] keyBytes = Base64.getDecoder().decode(base64);
 
             RSAPrivateKey rsaPrivateKey =
                     RSAPrivateKey.getInstance(keyBytes);
@@ -67,22 +73,14 @@ public class RsaKeyLoader {
                             rsaPrivateKey.getCoefficient()
                     );
 
-            KeyFactory keyFactory =
-                    KeyFactory.getInstance("RSA");
+            PrivateKey privateKey = KeyFactory.getInstance("RSA")
+                    .generatePrivate(keySpec);
 
-            PrivateKey privateKey =
-                    keyFactory.generatePrivate(keySpec);
-
-            System.out.println(
-                    "GitHub private key loaded successfully"
-            );
+            System.out.println("GitHub private key loaded successfully");
 
             return privateKey;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
             throw new RuntimeException(
                     "Failed to load GitHub App private key: "
                             + e.getMessage(),
