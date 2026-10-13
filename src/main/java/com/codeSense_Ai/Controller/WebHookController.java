@@ -62,7 +62,8 @@ public class WebHookController {
             return ResponseEntity.accepted().build(); // still 202, not an error
         }
 
-        Long installationId = payload.installation().id();
+
+
 
         if ("installation_repositories".equals(eventType)) {
             if (payload.installation() == null
@@ -70,21 +71,28 @@ public class WebHookController {
                 return ResponseEntity.badRequest().build();
             }
 
+            Long installationId = payload.installation().id();
+
             installationRepositorySyncService
                     .syncInstallationRepositoryChanges(
-                            payload.installation().id(),
+                            installationId,
                             payload.repositoriesAdded(),
                             payload.repositoriesRemoved()
                     );
 
+            installationRepositorySyncService
+                    .syncInstallationRepositories(installationId);
+
             return ResponseEntity.accepted().build();
         }
+
 
         if ("installation".equals(eventType)) {
             if (payload.installation() == null
                     || payload.installation().id() == null) {
                 return ResponseEntity.badRequest().build();
             }
+            Long installationId = payload.installation().id();
 
             if ("created".equals(payload.action())
                     || "unsuspend".equals(payload.action())) {
@@ -140,6 +148,7 @@ public class WebHookController {
         repoRepository.findByOwnerAndName(owner, repoName).ifPresentOrElse(
                 repo -> {
                     // ── Publish review job ─────────────────────────────
+                    Long installationId = payload.installation().id();
                     if (installationId == null
                             || !installationId.equals(repo.getInstallation_id())) {
                         log.warn("Installation mismatch for {}/{}", owner, repoName);
