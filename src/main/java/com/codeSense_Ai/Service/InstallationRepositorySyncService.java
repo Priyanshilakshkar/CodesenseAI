@@ -53,6 +53,12 @@ public class InstallationRepositorySyncService {
                     .retrieve()
                     .body(InstallationRepositoriesResponse.class);
 
+            log.info("Syncing repositories for installation {}", installationId);
+
+            log.info("GitHub API returned {} repositories on page {}",
+                    response == null || response.repositories() == null
+                            ? 0 : response.repositories().size(),
+                    page);
             if (response == null || response.repositories() == null
                     || response.repositories().isEmpty()) {
                 break;
