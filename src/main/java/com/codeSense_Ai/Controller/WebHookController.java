@@ -143,12 +143,20 @@ public class WebHookController {
         eventService.markAsProcessed(deliveryId);
 
         // ── Find registered repository ─────────────────────────────
+        Long installationId = payload.installation().id();
+        log.info("Looking up repository: owner='{}', name='{}', installationId={}",
+                owner, repoName, installationId);
 
-
+        log.info("Repositories in DB: {}",
+                repoRepository.findAll().stream()
+                        .map(r -> r.getOwner() + "/" + r.getName()
+                                + " (installation=" + r.getInstallation_id()
+                                + ", active=" + r.isActive() + ")")
+                        .toList());
         repoRepository.findByOwnerAndName(owner, repoName).ifPresentOrElse(
                 repo -> {
                     // ── Publish review job ─────────────────────────────
-                    Long installationId = payload.installation().id();
+
                     if (installationId == null
                             || !installationId.equals(repo.getInstallation_id())) {
                         log.warn("Installation mismatch for {}/{}", owner, repoName);
