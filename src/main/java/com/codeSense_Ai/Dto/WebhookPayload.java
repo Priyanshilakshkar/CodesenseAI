@@ -29,6 +29,9 @@ public record WebhookPayload(
         List<RepositoryPayload> repositoriesAdded,
 
         @JsonProperty("repositories_removed")
-        List<RepositoryPayload> repositoriesRemoved
+        List<RepositoryPayload> repositoriesRemoved,
+
+        @JsonProperty("repositories")
+        List<RepositoryPayload> repositories
 ) {
 }
