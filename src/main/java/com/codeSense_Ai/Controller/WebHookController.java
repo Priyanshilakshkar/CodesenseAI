@@ -89,6 +89,7 @@ public class WebHookController {
         }
 
 
+
         if ("installation".equals(eventType)) {
             if (payload.installation() == null
                     || payload.installation().id() == null) {
@@ -100,25 +101,18 @@ public class WebHookController {
             if ("created".equals(payload.action())
                     || "unsuspend".equals(payload.action())) {
 
-                if (payload.repositories() != null
-                        && !payload.repositories().isEmpty()) {
-                    installationRepositorySyncService
-                            .syncInstallationRepositoryChanges(
-                                    installationId,
-                                    payload.repositories(),
-                                    List.of()
-                            );
-                } else {
-                    installationRepositorySyncService
-                            .syncInstallationRepositories(installationId);
-                }
+                installationRepositorySyncService
+                        .syncInstallationRepositories(installationId);
+
             } else if ("deleted".equals(payload.action())) {
+
                 installationRepositorySyncService
                         .deactivateInstallationRepositories(installationId);
             }
 
             return ResponseEntity.accepted().build();
         }
+
 
         log.info("Webhook signature validation SUCCESS!");
 
