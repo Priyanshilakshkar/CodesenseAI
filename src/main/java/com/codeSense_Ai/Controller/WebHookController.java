@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.List;
+
 @RestController
 @Slf4j
 @RequiredArgsConstructor
@@ -92,12 +94,24 @@ public class WebHookController {
                     || payload.installation().id() == null) {
                 return ResponseEntity.badRequest().build();
             }
+
             Long installationId = payload.installation().id();
 
             if ("created".equals(payload.action())
                     || "unsuspend".equals(payload.action())) {
-                installationRepositorySyncService
-                        .syncInstallationRepositories(installationId);
+
+                if (payload.repositories() != null
+                        && !payload.repositories().isEmpty()) {
+                    installationRepositorySyncService
+                            .syncInstallationRepositoryChanges(
+                                    installationId,
+                                    payload.repositories(),
+                                    List.of()
+                            );
+                } else {
+                    installationRepositorySyncService
+                            .syncInstallationRepositories(installationId);
+                }
             } else if ("deleted".equals(payload.action())) {
                 installationRepositorySyncService
                         .deactivateInstallationRepositories(installationId);
